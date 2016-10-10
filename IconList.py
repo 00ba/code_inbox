@@ -6,7 +6,6 @@ import urllib
 from urllib2 import HTTPError
 from string import Template
 
-
 class Mobile_icon_list():
 	"""
 	docstring for Mobile_icon_list.
@@ -21,31 +20,33 @@ class Mobile_icon_list():
 		self.records = {"num":3825, "gid":'TY0000050', "yid":'201204-999999', "jfpdf":'2',"fitting":'null', "recomm":'', "pulse":'',"disasm":'0'} #Mobile.objectsが使えないため一時的に作成、init実装後にコメントアウトする
 #		self.records = Mobile.objects.order_by('num').all()
 
-	def get_url(self, record):
+	def get_url(self, matched_key, record):
 		"""
+		>>> Matched_key = 'jfpdf'
 		>>> r2 = {"num":3825, "gid":'TY0000050', "yid":'201204-999999', "jfpdf":'null',"fitting":'null', "recomm":'null', "pulse":'null',"disasm":'null'}
 		>>> tmp_list = Mobile_icon_list()
-		>>> tmp_list.get_url(r2)
-		'/TY0000050_201204-999999/'
+		>>> tmp_list.get_url(Matched_key, r2)
+		'/jfpdf/TY0000050_201204-999999/'
 		"""
-		url = Template('/${gid}_$yid/')
-		return url.substitute(gid = record["gid"], yid = record["yid"])
+		url = Template('/$key/${gid}_$yid/')
+		return url.substitute(key= matched_key, gid = record["gid"], yid = record["yid"])
 
-	def set_null(self, key, url):
+	def set_null(self, matched_key, records):
 		"""
 		>>> tmp_list = Mobile_icon_list()
-		>>> url = '/jfpdf/TY0000050_201204-999999/'
-		>>> key = 'jfpdf'
+		>>> records = {"num":3825, "gid":'TY0000050', "yid":'201204-999999', "jfpdf":'null',"fitting":'null', "recomm":'null', "pulse":'null',"disasm":'null'}
+		>>> matched_key = 'jfpdf'
 		>>> tmp_list = Mobile_icon_list()
-		>>> tmp_list.set_null(key, url)
-		>>> tmp_list.records[key]
+		>>> tmp_list.set_null(matched_key, records)
+		>>> tmp_list.records[matched_key]
 		''
 		"""
 		try:
+			url = self.get_url(matched_key, records)
 			test = Mobile_link_test()
 			test.mobile_link_test(url)
 		except NameError:
-			self.records[key] = ''
+			self.records[matched_key] = ''
 
 	def trim_record(self):
 		"""
@@ -82,14 +83,14 @@ class Mobile_link_test():
 		"""
 		raise NameError
 
-
 if __name__ == '__main__':
 	"""
 	jfpdf、fitting、recomm、pulse、disasm　の5種類のkeyごとに,
 	valueに値が入っていれば,set_nullメソッドを呼び出す
 	for で展開すると　dict が　str　になってしまう
-	多分、本番データを遣って、もう一階層上で　for　展開すれば大丈夫なはず
-	"""
+	多分、本番データを使って、もう一階層上で　for　展開すれば大丈夫なはず
+
+	リファクタリング用に一時コメントアウト→リスト内包を使ったパターンに変更
 	tmp_list = Mobile_icon_list()
 	for key in tmp_list.records:
 		url = tmp_list.get_url(tmp_list.records)
@@ -108,8 +109,18 @@ if __name__ == '__main__':
 		elif key == 'disasm' and tmp_list.records['disasm'] != '':
 			url = '/disasm' + url
 			tmp_list.set_null('disasm', url)
-#			save()
-#			tmp_list.trim_record()
+	"""
+
+	tmp_list = Mobile_icon_list()
+#	print tmp_list.records
+	for key in tmp_list.records:
+		target_keys = ['jfpdf', 'fitting', 'recomm', 'pulse', 'disasm']
+		[tmp_list.set_null(matched_key, tmp_list.records)
+		for matched_key in target_keys
+		if key in target_keys and tmp_list.records[key] != '']
+#	print tmp_list.records
+#	save()
+#	tmp_list.trim_record()
 
 import doctest
 doctest.testmod()
